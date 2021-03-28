@@ -43,7 +43,7 @@ sp_2018 <- raster("file.path")
 sp_2019 <- raster("file.path")
 ```
 
-2.1.1 stacking the rasters
+# 2.1.1 stacking the rasters
 
 ```{r}
 rasters <- stack(sp_2010, sp_2011, sp_2012, sp_2013, sp_2014, sp_2015, sp_2016, sp_2017, sp_2018, sp_2019)
@@ -51,7 +51,7 @@ rasters <- stack(sp_2010, sp_2011, sp_2012, sp_2013, sp_2014, sp_2015, sp_2016, 
 
 
 
-2.2 Shapefile
+# 2.2 Shapefile
 
 Had to change the file enconding to properly read the data. UTF8 didn't work, but
 the below solution with Windows-1252 did. 
@@ -59,58 +59,55 @@ the below solution with Windows-1252 did.
 PSA <- st_read("/file.path", options = "ENCODING=WINDOWS-1252")
 ```
 
-2.3 Operations: shapefile needs to have same crs as rasters
+# 2.3 Operations: shapefile needs to have same CRS as rasters
 
-2.3.1 Retrieve rasters' crs
+# 2.3.1 Retrieve rasters' crs
 ```{r}
 crs(rasters)
 ```
 
-2.3.2 Transform PSA's crs into rasters' crs
+# 2.3.2 Transform PSA's crs into rasters' crs
 ```{r}
 PSA_crs <- st_transform(PSA, crs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
 ```
 
-2.3.3 Checking to see if it worked
+# 2.3.3 Checking to see if it worked
 
 ```{r}
 crs(PSA_crs)
 ```
 
-This solution turned out to not give the correct output from the rasters after 
-they were cropped, i.e., it looked like it cropped the wrong area. This may be
-because the rasters are unprojected. So later in the code I do the reverse: match
-the rasters crs to that of the PSA shapefile, which is projected. 
-
 ## Overview of the PSA dataframe
 
-# 4. Taking a quick look at the data
+# 3. Taking a quick look at the data
+
 ```{r}
 glimpse(PSA)
 ```
+
 ```{r}
 colnames(PSA)
 ```
 
-# 5. Taking a quick look at the map
+# 4. Taking a quick look at the map
+
 ```{r}
 plot(PSA)
 ```
 
-# 7. Inspecting one of the raster objects
+# 5. Inspecting one of the raster objects
+
 ```{r}
-
 sp_2010
-
 ```
 
-# 8. Quick look at the map
+# 6. Quick look at the map
 ```{r}
 plot(sp_2010)
 ```
 problem: legends. This created a heatmap of the values.
 
-# 9. Quick look at the structure 
+# 7. Quick look at the structure 
 ```{r}
 st_crs(sp_2010)
 ```
@@ -118,58 +115,31 @@ The +proj=longlat means it's unprojected. It is generally best to perform spatia
 
 ## Some data manipulation to be able to make the model run
 
-# 10. Projecting the raster 
 
-# Convert PSA to a Spatial object
-
-```{r}
-PSA_sp1 <- st_zm(PSA_crs)
-
-PSA_sp <- as(PSA_sp1, "Spatial")
-```
-
-
-# Mask the rasters with the PSA area (PSA_crs) 
+# 8. Mask the rasters with the PSA area (PSA_crs) 
 -- this didnt work. Output error: Error in x$.self$finalize() : attempt to apply non-function
 
 ```{r}
 rasters_masked <- mask(rasters, mask = PSA_sp)
 ```
 
-# Plot rasters_masked -- this is a raster!
+# 9. Crop rasters with PSA_crs
 
 ```{r}
-plot(rasters_masked)
+rasters_cropped <- crop(rasters, PSA_crs) 
 ```
+This outputted the wrong area. 
 
+# 10. Plot the cropped version and compare
 
-# Crop rasters with PSA_crs
-
-```{r}
-rasters_cropped <- crop(rasters, PSA_crs)
-```
-
-
-# Plot the cropped version and compare
-
-8. 
 ```{r}
 plot(rasters_cropped)
 ```
+Here we see that the area cropped is not the same as the shapefile area. 
 
 
+# 11. Extract the rasters values at the shapefile cut
 
-# Extract the rasters values at the shapefile cut
-landmarks_ex <- extract(canopy, landmarks_sp)
-
-```{r}
-rasters_extracted <- extract(rasters_cropped, PSA_sp2)
-```
-
-
-# Look at the results
-landmarks_cp
-landmarks_ex
 
 
 
