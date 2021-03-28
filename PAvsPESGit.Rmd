@@ -22,6 +22,7 @@ verty in Brazil.
 library(dplyr)
 library(sf)
 library(raster)
+library(rgdal)
 ```
 Note: needed to install the packages "rgdal" and "sp" to be able to use the package
 "raster". And also lwgeom.
@@ -53,10 +54,9 @@ rasters <- stack(sp_2010, sp_2011, sp_2012, sp_2013, sp_2014, sp_2015, sp_2016, 
 
 # 2.2 Shapefile
 
-Had to change the file enconding to properly read the data. UTF8 didn't work, but
-the below solution with Windows-1252 did. 
+Had to change the file encoding to properly read the data.
 ```{r}
-PSA <- st_read("/file.path", options = "ENCODING=WINDOWS-1252")
+PSA <- readOGR("/file.path", encoding = "UTF-8")
 ```
 
 # 2.3 Operations: shapefile needs to have same CRS as rasters
@@ -68,7 +68,7 @@ crs(rasters)
 
 # 2.3.2 Transform PSA's crs into rasters' crs
 ```{r}
-PSA_crs <- st_transform(PSA, crs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
+PSA_crs <- spTransform(x = PSA, CRSobj = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
 ```
 
 # 2.3.3 Checking to see if it worked
@@ -92,8 +92,10 @@ colnames(PSA)
 # 4. Taking a quick look at the map
 
 ```{r}
-plot(PSA)
+plot(PSA_crs)
 ```
+![image](https://user-images.githubusercontent.com/78986090/112757228-1f499500-8fe9-11eb-94f2-5c77428cfde3.png)
+
 
 # 5. Inspecting one of the raster objects
 
@@ -111,7 +113,6 @@ problem: legends. This created a heatmap of the values.
 ```{r}
 st_crs(sp_2010)
 ```
-The +proj=longlat means it's unprojected. It is generally best to perform spatial analysis with layers that have a projected CRS.If it begins with +proj=longlat then the CRS is unprojected.
 
 ## Some data manipulation to be able to make the model run
 
@@ -120,7 +121,7 @@ The +proj=longlat means it's unprojected. It is generally best to perform spatia
 -- this didnt work. Output error: Error in x$.self$finalize() : attempt to apply non-function
 
 ```{r}
-rasters_masked <- mask(rasters, mask = PSA_sp)
+rasters_masked <- mask(x = rasters, mask = PSA_crs)
 ```
 
 # 9. Crop rasters with PSA_crs
@@ -128,17 +129,21 @@ rasters_masked <- mask(rasters, mask = PSA_sp)
 ```{r}
 rasters_cropped <- crop(rasters, PSA_crs) 
 ```
-This outputted the wrong area. 
 
 # 10. Plot the cropped version and compare
 
 ```{r}
 plot(rasters_cropped)
 ```
-Here we see that the area cropped is not the same as the shapefile area. 
+![image](https://user-images.githubusercontent.com/78986090/112757250-3d16fa00-8fe9-11eb-8052-9d23833c5a56.png)
+
 
 
 # 11. Extract the rasters values at the shapefile cut
+
+```{r}
+rasters_extracted <- extract(rasters_masked, PSA_crs, method = simple)
+```
 
 
 
