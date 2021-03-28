@@ -1,0 +1,175 @@
+---
+title: "PAs vs PES in Brazil"
+author: "Julia Lunardi"
+date: "3/15/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Protected Areas vs Payment for Ecosystem Services in Brazil
+
+This is the code I am developing for my Master's thesis about the effectiveness
+of Protected Areas versus Payment for Ecosystem Services in deforestation and po-
+verty in Brazil. 
+
+## Loading the packages and data
+
+# 1. Loading packages
+```{r}
+library(dplyr)
+library(sf)
+library(raster)
+```
+Note: needed to install the packages "rgdal" and "sp" to be able to use the package
+"raster". And also lwgeom.
+
+# 2. Loading the data
+
+# 2.1 rasters
+
+```{r}
+sp_2010 <- raster("/Users/juliaabdalla/Desktop/Data Thesis/mapbiomas/mapbiomas-brazil-collection-50-saopaulo-2010.tif")
+sp_2011 <- raster("/Users/juliaabdalla/Desktop/Data Thesis/mapbiomas/mapbiomas-brazil-collection-50-saopaulo-2011.tif")
+sp_2012 <- raster("/Users/juliaabdalla/Desktop/Data Thesis/mapbiomas/mapbiomas-brazil-collection-50-saopaulo-2012.tif")
+sp_2013 <- raster("/Users/juliaabdalla/Desktop/Data Thesis/mapbiomas/mapbiomas-brazil-collection-50-saopaulo-2013.tif")
+sp_2014 <- raster("/Users/juliaabdalla/Desktop/Data Thesis/mapbiomas/mapbiomas-brazil-collection-50-saopaulo-2014.tif")
+sp_2015 <- raster("/Users/juliaabdalla/Desktop/Data Thesis/mapbiomas/mapbiomas-brazil-collection-50-saopaulo-2015.tif")
+sp_2016 <- raster("/Users/juliaabdalla/Desktop/Data Thesis/mapbiomas/mapbiomas-brazil-collection-50-saopaulo-2016.tif")
+sp_2017 <- raster("/Users/juliaabdalla/Desktop/Data Thesis/mapbiomas/mapbiomas-brazil-collection-50-saopaulo-2017.tif")
+sp_2018 <- raster("/Users/juliaabdalla/Desktop/Data Thesis/mapbiomas/mapbiomas-brazil-collection-50-saopaulo-2018.tif")
+sp_2019 <- raster("/Users/juliaabdalla/Desktop/Data Thesis/mapbiomas/mapbiomas-brazil-collection-50-saopaulo-2019.tif")
+```
+
+2.1.1 stacking the rasters
+
+```{r}
+rasters <- stack(sp_2010, sp_2011, sp_2012, sp_2013, sp_2014, sp_2015, sp_2016, sp_2017, sp_2018, sp_2019)
+```
+
+
+
+2.2 Shapefile
+
+Had to change the file enconding to properly read the data. UTF8 didn't work, but
+the below solution with Windows-1252 did. 
+```{r}
+PSA <- st_read("/Users/juliaabdalla/Desktop/Data Thesis/area_projeto_disjunta_conma/Area_projeto_disjunta_conma.shp", options = "ENCODING=WINDOWS-1252")
+```
+
+2.3 Operations: shapefile needs to have same crs as rasters
+
+2.3.1 Retrieve rasters' crs
+```{r}
+crs(rasters)
+```
+
+2.3.2 Transform PSA's crs into rasters' crs
+```{r}
+PSA_crs <- st_transform(PSA, crs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
+```
+
+2.3.3 Checking to see if it worked
+
+```{r}
+crs(PSA_crs)
+```
+
+This solution turned out to not give the correct output from the rasters after 
+they were cropped, i.e., it looked like it cropped the wrong area. This may be
+because the rasters are unprojected. So later in the code I do the reverse: match
+the rasters crs to that of the PSA shapefile, which is projected. 
+
+## Overview of the PSA dataframe
+
+# 4. Taking a quick look at the data
+```{r}
+glimpse(PSA)
+```
+```{r}
+colnames(PSA)
+```
+
+# 5. Taking a quick look at the map
+```{r}
+plot(PSA)
+```
+
+# 7. Inspecting one of the raster objects
+```{r}
+
+sp_2010
+
+```
+
+# 8. Quick look at the map
+```{r}
+plot(sp_2010)
+```
+problem: legends. This created a heatmap of the values.
+
+# 9. Quick look at the structure 
+```{r}
+st_crs(sp_2010)
+```
+The +proj=longlat means it's unprojected. It is generally best to perform spatial analysis with layers that have a projected CRS.If it begins with +proj=longlat then the CRS is unprojected.
+
+## Some data manipulation to be able to make the model run
+
+# 10. Projecting the raster 
+
+# Convert PSA to a Spatial object
+
+```{r}
+PSA_sp1 <- st_zm(PSA_crs)
+
+PSA_sp <- as(PSA_sp1, "Spatial")
+```
+
+
+# Mask the rasters with the PSA area (PSA_crs) 
+
+```{r}
+rasters_masked <- mask(rasters, mask = PSA_sp)
+```
+
+# Plot rasters_masked -- this is a raster!
+
+```{r}
+plot(rasters_masked)
+```
+
+
+# Crop rasters with PSA_sp2. This essentially "zooms in".
+
+```{r}
+rasters_cropped <- crop(rasters, PSA_crs)
+```
+
+
+# Plot the cropped version and compare
+plot(canopy_crop)
+8. 
+```{r}
+plot(rasters_cropped)
+```
+
+
+
+# Extract the rasters values at the shapefile cut
+landmarks_ex <- extract(canopy, landmarks_sp)
+
+```{r}
+rasters_extracted <- extract(rasters_cropped, PSA_sp2)
+```
+
+
+# Look at the results
+landmarks_cp
+landmarks_ex
+
+
+
+
