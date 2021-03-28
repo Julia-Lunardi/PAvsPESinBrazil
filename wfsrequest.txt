@@ -1,0 +1,1 @@
+https://ferramentas.sibbr.gov.br/geoserver/SiBBr/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=SiBBr:Area_projeto_disjunta_conma&outputFormat=SHAPE-ZIP
